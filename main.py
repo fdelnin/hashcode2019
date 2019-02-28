@@ -4,9 +4,58 @@
 # Version: 1.0
 
 
+def score(p1, p2):
+    temp = p1
+    temp[-1].intersection(p2[-1])
+    l = len(temp[-1])
+    diff = min(p1[2], p2[2]) - l
+
+    return min(diff, l)
+
+
+def find_local_best(S):
+    fff = [S[0]]
+    l = len(S)
+    k=0
+    for i in range(l):
+        best = None
+        #if S[k][2] != 0:
+        index = None
+        for j in range(0, l):
+            if j == i and j+1 < l:
+                j += 1
+
+            if S[j][2] != 0:
+                if best is None:
+                    best = score(S[k], S[j])
+                    index = j
+                else:
+                    if S[j][2] >= best*2:
+                        temp_score = score(S[k], S[j])
+                        if temp_score > best:
+                            best = temp_score
+                            index = j
+                    else:
+                        break
+
+        # usciti
+        if index is not None:
+            fff.append(S[index])
+            S[index][2] = 0
+        k=index
+
+    c = 0
+    for x in S:
+        if x[2] != 0:
+            c +=1
+
+    print(c)
+    return fff
+
+
 def slideshow2txt(S):
     f = open("results/{}".format(FILENAME), 'w')
-    f.write("{}\n".format(len(S)))  # python will convert \n to os.linesep
+    f.write("{}\n".format(len(S)))
 
     for slide in S:
         f.write("{}\n".format(slide[0]))
@@ -58,11 +107,13 @@ def main():
     V_SLIDES = merge_vert(V_ALBUM)
 
     S = slideshow(H_SLIDES, V_SLIDES)
-    slideshow2txt(S)
+    FINAL = find_local_best(S)
+    slideshow2txt(FINAL)
+    #score(S[0], S[1])
 
 
 if __name__ == '__main__':
 
-    FILENAME = "e_shiny_selfies.txt"
+    FILENAME = "b_lovely_landscapes.txt"
     main()
 
