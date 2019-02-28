@@ -16,12 +16,12 @@ def score(p1, p2):
 def find_local_best(S):
     fff = [S[0]]
     l = len(S)
-    k=0
+    k = 0
     for i in range(l):
         best = None
         #if S[k][2] != 0:
         index = None
-        for j in range(0, l):
+        for j in range(1, l):
             if j == i and j+1 < l:
                 j += 1
 
