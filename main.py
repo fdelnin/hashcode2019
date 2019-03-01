@@ -1,117 +1,138 @@
 # Google Hashcode 2019
-# 28/02/2019
+# 01/03/2019 - Extended Round
 # Team: AnGry
-# Version: 1.0
+# Version: 1.1
+
+import math
+
+
+class Photo:
+    def __init__(self, pid, orientation, n_tags, tags):
+        self.pid = str(pid)
+        self.orientation = str(orientation)
+        self.n_tags = int(n_tags)
+        self.tags = set(tags)
+
+    def __repr__(self):
+        return "ID: {}, N_TAGS: {}, TAGS: {}".format(self.pid, self.n_tags, self.tags)
 
 
 def score(p1, p2):
-    temp = p1
-    temp[-1].intersection(p2[-1])
-    l = len(temp[-1])
-    diff = min(p1[2], p2[2]) - l
-
-    return min(diff, l)
+    shared = len(p1.tags.intersection(p2.tags))
+    min_non_shared = min(p1.n_tags, p2.n_tags) - shared
+    return min(shared, min_non_shared)
 
 
-def find_local_best(S):
-    fff = [S[0]]
-    l = len(S)
-    k=0
-    for i in range(l):
-        best = None
-        #if S[k][2] != 0:
-        index = i+1
-        best = score(S[k], S[j])
-        for j in range(i+1, i+10):
-            if j == i and j+1 < l:
-                j += 1
+def merge_vertical(v_photos, mode="max"):
+    """
+    mergin vertical photos in a simple way
+    :param v_photos: list of vertical photos
+    :param mode:
+    :return: list of slides (each slide is composed of 2 vertical photos)
+    """
 
-            if S[j][2] != 0:
-
-                if S[j][2] >= S[k][2]:
-                    temp_score = score(S[k], S[j])
-                    if temp_score > best:
-                        best = temp_score
-                        index = j
-                else:
-                    break
-
-        # usciti
-        if index is not None:
-            fff.append(S[index])
-            S[index][2] = 0
-        k=index
-
-    c = 0
-    for x in S:
-        if x[2] != 0:
-            c +=1
-
-    print(c)
-    return fff
-
-
-def slideshow2txt(S):
-    f = open("results/{}".format(FILENAME), 'w')
-    f.write("{}\n".format(len(S)))
-
-    for slide in S:
-        f.write("{}\n".format(slide[0]))
-
-
-# COUPLE
-def merge_vert(photos):
     V = []
-    bound = len(photos)
-    for i in range(0, bound, 2):
-        if i != bound-1:
-            index_1 = photos[i][0]
-            index_2 = photos[i+1][0]
-            tags    = photos[i][3].union(photos[i+1][3])
-            V.append(["{} {}".format(index_1, index_2), "V", len(tags), tags])
+    bound = len(v_photos)
 
-    V = sorted(V, key=lambda photo: photo[2], reverse=True)
+    if mode == "max":
+        for i in range(0, bound-1, 2):
+            index_1 = v_photos[i].pid
+            index_2 = v_photos[i + 1].pid
+            tags = v_photos[i].tags.union(v_photos[i + 1].tags)
+            V.append(Photo(pid="{} {}".format(index_1, index_2), orientation="V", n_tags=len(tags), tags=tags))
+
+        V.sort(key=lambda x: x.n_tags, reverse=True)
+
+    else:
+        if bound % 2 != 0:
+            bound = bound - 1
+
+        bound = int(bound/2)
+        for i in range(0, bound):
+            index_1 = v_photos[i].pid
+            index_2 = v_photos[-i - 1].pid
+            tags = v_photos[i].tags.union(v_photos[-i - 1].tags)
+            V.append(Photo(pid="{} {}".format(index_1, index_2), orientation="V", n_tags=len(tags), tags=tags))
+
+        V.sort(key=lambda x: x.n_tags, reverse=True)
+
     return V
 
 
-# COUPLE2
-def slideshow(H, V):
-    H.extend(V)
-    S = sorted(H, key=lambda photo: photo[2], reverse=True)
-    return S
+def sort_slides(slides, k):
+    slideshow = [slides[0]]
+    del slides[0]
 
+    for j, p1 in enumerate(slideshow):
+        best_score = 0
+        best_index = None
+        c = 0
+
+        for i, p2 in enumerate(slides):
+            if c >= k:
+                break
+
+            current_score = score(p1, p2)
+
+            if best_score >= math.floor(p2.n_tags/2):
+                break
+
+            if current_score > best_score:
+                best_score = current_score
+                best_index = i
+
+            c += 1
+
+        if best_index is not None:
+            slideshow.append(slides[best_index])
+            del slides[best_index]
+        else:
+            # no score > 0 found, adding first element arbitrarily
+            if len(slides) == 0:
+                break
+
+            slideshow.append(slides[0])
+            del slides[0]
+
+    return slideshow
+
+
+def save_slideshow(slides):
+    f = open("results/{}".format(FILENAME), 'w')
+    f.write("{}\n".format(len(slides)))
+
+    for slide in slides:
+        f.write("{}\n".format(slide.pid))
 
 
 def main():
+
     ALBUM = []
     with open("./datasets/{}".format(FILENAME)) as f:
-        n_photos = f.readline()
 
+        # skipping first line
+        f.readline()
         for i, line in enumerate(f.readlines()):
             proc_line = (line.strip().split(" "))
+            photo = Photo(i, proc_line[0], proc_line[1], proc_line[2:])
+            ALBUM.append(photo)
 
-            orientation = proc_line[0]
-            n_tags = int(proc_line[1])
-            tags = set(proc_line[2:])
+    v_photos = [photo for photo in ALBUM if photo.orientation == "V"]
+    v_photos.sort(key=lambda x: x.n_tags, reverse=True)
+    v_photos = merge_vertical(v_photos, mode="max")
 
-            ALBUM.append([str(i), orientation, n_tags, tags])
-        # print(ALBUM)
+    h_photos = [photo for photo in ALBUM if photo.orientation == "H" and photo.n_tags >= 2]
+    h_photos.sort(key=lambda x: x.n_tags, reverse=True)
 
-    V_ALBUM = [photo for photo in ALBUM if photo[1] == "V"]
-    V_ALBUM = sorted(V_ALBUM, key=lambda photo: photo[2], reverse=True)
-    H_ALBUM = [photo for photo in ALBUM if photo[1] == "H"]
+    # merging horizontal and vertical photos
+    slides = v_photos + h_photos
+    slides.sort(key=lambda x: x.n_tags, reverse=True)
+    # print(slides)
 
-    H_SLIDES = sorted(H_ALBUM, key=lambda photo: photo[2], reverse=True)
-    V_SLIDES = merge_vert(V_ALBUM)
-
-    S = slideshow(H_SLIDES, V_SLIDES)
-    FINAL = find_local_best(S)
-    slideshow2txt(FINAL)
-    #score(S[0], S[1])
+    slideshow = sort_slides(slides, 1000)
+    save_slideshow(slideshow)
 
 
 if __name__ == '__main__':
-
-    FILENAME = "b_lovely_landscapes.txt"
+    FILENAME = "e_shiny_selfies.txt"
     main()
-
