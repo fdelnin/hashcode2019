@@ -129,7 +129,7 @@ def main():
     slides.sort(key=lambda x: x.n_tags, reverse=True)
     # print(slides)
 
-    slideshow = sort_slides(slides, 5000)
+    slideshow = sort_slides(slides, 10000)
     save_slideshow(slideshow)
 
 
