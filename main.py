@@ -119,7 +119,7 @@ def main():
 
     v_photos = [photo for photo in ALBUM if photo.orientation == "V"]
     v_photos.sort(key=lambda x: x.n_tags, reverse=True)
-    v_photos = merge_vertical(v_photos, mode="max")
+    v_photos = merge_vertical(v_photos, mode="average")
 
     h_photos = [photo for photo in ALBUM if photo.orientation == "H" and photo.n_tags >= 2]
     h_photos.sort(key=lambda x: x.n_tags, reverse=True)
@@ -129,10 +129,13 @@ def main():
     slides.sort(key=lambda x: x.n_tags, reverse=True)
     # print(slides)
 
-    slideshow = sort_slides(slides, 1000)
+    slideshow = sort_slides(slides, 5000)
     save_slideshow(slideshow)
 
 
 if __name__ == '__main__':
-    FILENAME = "e_shiny_selfies.txt"
-    main()
+    filenames = ["a_example.txt", "b_lovely_landscapes.txt", "c_memorable_moments.txt", "d_pet_pictures.txt", "e_shiny_selfies.txt"]
+    
+    for f in filenames:
+        FILENAME = f
+        main()
